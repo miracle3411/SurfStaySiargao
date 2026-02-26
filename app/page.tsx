@@ -1,15 +1,15 @@
-// app/page.tsx - Homepage with Interactive Map
+// app/page.tsx - Siargao Vibes Homepage 🏄‍♂️
 'use client'
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { Search, MapPin, Home, Users, Star } from 'lucide-react'
+import { Search, MapPin, Home, Users, Star, Waves } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-// Import Map component dynamically (Leaflet needs window object)
+// Import Map component dynamically
 const SiargaoMap = dynamic(() => import('@/components/SiargaoMap'), {
   ssr: false,
-  loading: () => <div className="h-[600px] bg-gray-100 animate-pulse rounded-lg" />
+  loading: () => <div className="h-[600px] bg-gradient-to-br from-cyan-50 to-teal-50 animate-pulse rounded-lg" />
 })
 
 interface Property {
@@ -105,91 +105,118 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-        <div className="absolute inset-0 bg-black/20" />
+    <div className="min-h-screen bg-gradient-to-b from-cyan-50 via-white to-orange-50">
+      {/* Hero Section - Tropical Sunset Gradient */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-teal-400 via-cyan-500 to-blue-500">
+        {/* Tropical Pattern Overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l30 30-30 30L0 30z' fill='%23ffffff' fill-opacity='1'/%3E%3C/svg%3E")`,
+            backgroundSize: '30px 30px'
+          }}></div>
+        </div>
+
+        {/* Animated Waves at Bottom */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg className="w-full h-24" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,50 C150,80 350,0 600,50 C850,100 1050,20 1200,50 L1200,120 L0,120 Z" 
+                  fill="white" fillOpacity="0.3">
+              <animate attributeName="d" 
+                       dur="10s" 
+                       repeatCount="indefinite"
+                       values="M0,50 C150,80 350,0 600,50 C850,100 1050,20 1200,50 L1200,120 L0,120 Z;
+                               M0,50 C150,20 350,100 600,50 C850,0 1050,80 1200,50 L1200,120 L0,120 Z;
+                               M0,50 C150,80 350,0 600,50 C850,100 1050,20 1200,50 L1200,120 L0,120 Z"/>
+            </path>
+          </svg>
+        </div>
+
         <div className="relative max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Find Your Perfect Stay in Siargao
+            {/* Surf Icon */}
+            <div className="inline-flex items-center justify-center mb-6">
+              <Waves className="h-16 w-16 text-white animate-bounce" />
+            </div>
+
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-lg">
+              Find Your Island Paradise in Siargao
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              Book directly with local hosts. Lowest fees. Instant confirmation.
+            <p className="text-xl md:text-2xl mb-8 text-cyan-50">
+              🏄‍♂️ Surf. Relax. Explore. Book local. Pay less. Live aloha. 🌴
             </p>
 
-            {/* Search Bar */}
-            <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-6">
+            {/* Search Bar - Tropical White Card */}
+            <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border-4 border-white">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location or Property
+                    🏝️ Where to?
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <MapPin className="absolute left-3 top-3 h-5 w-5 text-teal-500" />
                     <input
                       type="text"
-                      placeholder="General Luna, Cloud 9, Pacifico..."
+                      placeholder="Cloud 9, General Luna, Pacifico..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full pl-10 pr-4 py-3 border-2 border-teal-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 hover:border-teal-300 transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Guests
+                    👥 Crew Size
                   </label>
                   <div className="relative">
-                    <Users className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Users className="absolute left-3 top-3 h-5 w-5 text-orange-500" />
                     <input
                       type="number"
                       min="1"
                       value={filters.guests}
                       onChange={(e) => setFilters({...filters, guests: parseInt(e.target.value)})}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full pl-10 pr-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 hover:border-orange-300 transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Property Type
+                    🏠 Vibe
                   </label>
                   <select
                     value={filters.propertyType}
                     onChange={(e) => setFilters({...filters, propertyType: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-4 py-3 border-2 border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-gray-900 hover:border-cyan-300 transition-colors"
                   >
-                    <option value="all">All Types</option>
-                    <option value="Villa">Villa</option>
-                    <option value="Homestay">Homestay</option>
-                    <option value="Hotel">Hotel</option>
-                    <option value="Hostel">Hostel</option>
-                    <option value="Apartment">Apartment</option>
+                    <option value="all">All Vibes</option>
+                    <option value="Villa">🏡 Villa</option>
+                    <option value="Homestay">🏠 Homestay</option>
+                    <option value="Hotel">🏨 Hotel</option>
+                    <option value="Hostel">🛏️ Hostel</option>
+                    <option value="Apartment">🏢 Apartment</option>
                   </select>
                 </div>
               </div>
 
-              {/* View Toggle */}
+              {/* View Toggle - Tropical Buttons */}
               <div className="mt-6 flex justify-center gap-4">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-8 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
                     viewMode === 'grid'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-teal-300'
                   }`}
                 >
-                  Grid View
+                  🏠 Grid View
                 </button>
                 <button
                   onClick={() => setViewMode('map')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-8 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
                     viewMode === 'map'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-lg'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300'
                   }`}
                 >
                   🗺️ Map View
@@ -200,25 +227,33 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="bg-white border-b">
+      {/* Stats Section - Beach Sand Colors */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-y-4 border-orange-200">
         <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-blue-600">{properties.length}</div>
-              <div className="text-gray-600 mt-2">Properties</div>
+            <div className="transform hover:scale-110 transition-transform">
+              <div className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                {properties.length}
+              </div>
+              <div className="text-gray-700 mt-2 font-medium">🏝️ Island Stays</div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-600">12%</div>
-              <div className="text-gray-600 mt-2">Commission</div>
+            <div className="transform hover:scale-110 transition-transform">
+              <div className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                12%
+              </div>
+              <div className="text-gray-700 mt-2 font-medium">💰 Commission</div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-600">24hrs</div>
-              <div className="text-gray-600 mt-2">Payout Time</div>
+            <div className="transform hover:scale-110 transition-transform">
+              <div className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                24hrs
+              </div>
+              <div className="text-gray-700 mt-2 font-medium">⚡ Payout</div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-600">100%</div>
-              <div className="text-gray-600 mt-2">Local</div>
+            <div className="transform hover:scale-110 transition-transform">
+              <div className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                100%
+              </div>
+              <div className="text-gray-700 mt-2 font-medium">🌴 Local Love</div>
             </div>
           </div>
         </div>
@@ -228,53 +263,60 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading amazing properties...</p>
+            <Waves className="animate-spin h-12 w-12 text-teal-500 mx-auto" />
+            <p className="mt-4 text-gray-600">Loading paradise properties...</p>
           </div>
         ) : (
           <>
             <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {filteredProperties.length} Properties Available
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                {filteredProperties.length} Island Vibes Available
               </h2>
             </div>
 
             {viewMode === 'map' ? (
               // Map View
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-4 border-teal-100">
                 <SiargaoMap properties={filteredProperties} />
               </div>
             ) : (
-              // Grid View
+              // Grid View - Tropical Cards
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProperties.map((property) => (
-                  <div key={property.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
-                    <div className="relative h-48">
+                  <div 
+                    key={property.id} 
+                    className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-teal-300"
+                  >
+                    <div className="relative h-56 overflow-hidden">
                       <img
                         src={getCoverPhoto(property)}
                         alt={property.property_name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
-                      <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-sm font-semibold text-gray-900">
+                      <div className="absolute top-4 right-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                         ₱{property.pricing?.[0]?.base_price || 0}/night
                       </div>
+                      {/* Tropical Badge */}
+                      <div className="absolute top-4 left-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                        🌴 {property.property_type}
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
                         {property.property_name}
                       </h3>
                       <div className="flex items-center text-sm text-gray-600 mb-2">
-                        <MapPin className="h-4 w-4 mr-1" />
+                        <MapPin className="h-4 w-4 mr-1 text-teal-500" />
                         {property.barangay}
                       </div>
                       <div className="flex items-center text-sm text-gray-600 mb-4">
-                        <Home className="h-4 w-4 mr-1" />
-                        {property.bedrooms} bedrooms · {property.max_guests} guests
+                        <Home className="h-4 w-4 mr-1 text-orange-500" />
+                        {property.bedrooms} bed · {property.max_guests} guests
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span className="ml-1 text-sm font-medium">
+                          <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                          <span className="ml-1 text-sm font-semibold text-gray-900">
                             {getAverageRating(property) || 'New'}
                           </span>
                           {property.reviews && property.reviews.length > 0 && (
@@ -283,8 +325,8 @@ export default function HomePage() {
                             </span>
                           )}
                         </div>
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                          View Details
+                        <button className="px-5 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105">
+                          Book Now 🏄‍♂️
                         </button>
                       </div>
                     </div>
@@ -294,45 +336,49 @@ export default function HomePage() {
             )}
 
             {filteredProperties.length === 0 && !loading && (
-              <div className="text-center py-12">
-                <p className="text-xl text-gray-600">No properties found matching your criteria.</p>
-                <p className="text-gray-500 mt-2">Try adjusting your filters or search terms.</p>
+              <div className="text-center py-16 bg-gradient-to-br from-cyan-50 to-teal-50 rounded-2xl">
+                <Waves className="h-16 w-16 text-teal-400 mx-auto mb-4" />
+                <p className="text-2xl text-gray-700 font-semibold">No properties found, bro! 🤙</p>
+                <p className="text-gray-500 mt-2">Try adjusting your filters or search.</p>
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* Why SurfStay Section */}
-      <div className="bg-blue-50 py-16">
+      {/* Why SurfStay Section - Sunset Vibes */}
+      <div className="bg-gradient-to-r from-orange-100 via-pink-100 to-purple-100 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">Why Book with SurfStay Siargao?</h2>
+          <h2 className="text-4xl font-bold text-center mb-4 bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+            Why Ride with SurfStay? 🏄‍♂️
+          </h2>
+          <p className="text-center text-gray-600 mb-12 text-lg">Island vibes, local prices, good karma ✌️</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+            <div className="text-center transform hover:scale-105 transition-transform">
+              <div className="bg-gradient-to-br from-teal-400 to-cyan-500 text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-bold shadow-xl">
                 12%
               </div>
-              <h3 className="text-xl font-semibold mb-2">Lowest Commission</h3>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">🤙 Lowest Commission</h3>
               <p className="text-gray-600">
-                Only 12% vs 15-25% on other platforms. Better prices for you!
+                Only 12% vs 15-25% on corporate platforms. More pesos for locals!
               </p>
             </div>
-            <div className="text-center">
-              <div className="bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            <div className="text-center transform hover:scale-105 transition-transform">
+              <div className="bg-gradient-to-br from-orange-400 to-pink-500 text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-xl">
                 ⚡
               </div>
-              <h3 className="text-xl font-semibold mb-2">Instant Confirmation</h3>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">⚡ Instant Stoke</h3>
               <p className="text-gray-600">
-                Book now, confirmed in seconds. No waiting for host approval.
+                Book now, confirmed in seconds. Catch the next wave, not emails!
               </p>
             </div>
-            <div className="text-center">
-              <div className="bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                🏝️
+            <div className="text-center transform hover:scale-105 transition-transform">
+              <div className="bg-gradient-to-br from-green-400 to-teal-500 text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-xl">
+                🌴
               </div>
-              <h3 className="text-xl font-semibold mb-2">Local Expertise</h3>
+              <h3 className="text-xl font-bold mb-2 text-gray-900">🌴 Pure Siargao</h3>
               <p className="text-gray-600">
-                Curated by locals who know Siargao best. Authentic experiences.
+                Made by locals, for explorers. Authentic island experiences, no corporate BS.
               </p>
             </div>
           </div>
