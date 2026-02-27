@@ -9,7 +9,19 @@ import { supabase } from '@/lib/supabase'
 // Import Map component dynamically
 const SiargaoMap = dynamic(() => import('@/components/SiargaoMap'), {
   ssr: false,
-  loading: () => <div className="h-[600px] bg-gradient-to-br from-cyan-50 to-teal-50 animate-pulse rounded-lg" />
+  loading: () => (
+    <div
+      className="flex flex-col items-center justify-center"
+      style={{
+        height: '626px',
+        borderRadius: '20px',
+        background: 'linear-gradient(175deg, #0c1e3a 0%, #0f3460 40%, #1a5276 70%, #148fa8 100%)',
+      }}
+    >
+      <div className="animate-spin w-12 h-12 rounded-full border-4 border-sky-900 border-t-sky-400 mb-3" />
+      <p className="text-teal-300 text-sm font-medium">Loading Siargao Island...</p>
+    </div>
+  )
 })
 
 interface Property {
@@ -268,15 +280,31 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                {filteredProperties.length} Island Vibes Available
-              </h2>
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                    {filteredProperties.length} Island Vibes
+                  </h2>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                    Available
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500">
+                  {viewMode === 'map' ? 'Explore properties across Siargao Island' : 'Tap any card to view details'}
+                </p>
+              </div>
+              {viewMode === 'map' && (
+                <div className="flex items-center gap-2 text-sm bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl">
+                  <span>🗺️</span>
+                  <span className="font-medium text-amber-700">Interactive map — drag to explore</span>
+                </div>
+              )}
             </div>
 
             {viewMode === 'map' ? (
               // Map View
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-4 border-teal-100">
+              <div>
                 <SiargaoMap properties={filteredProperties} />
               </div>
             ) : (

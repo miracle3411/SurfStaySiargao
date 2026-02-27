@@ -49,31 +49,97 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
     if (!mapRef.current) {
       // Initialize map centered on Siargao
       const map = L.map('map', {
-        center: [9.80, 126.10],
+        center: [9.845, 126.065],
         zoom: 11,
         minZoom: 10,
         maxZoom: 16,
         maxBounds: [
-          [9.60, 125.90],
-          [10.00, 126.30]
+          [9.55, 125.80],
+          [10.15, 126.40]
         ],
         maxBoundsViscosity: 0.7,
+        attributionControl: false,
       })
 
-      // Ocean blue background
+      // Premium ocean + island styles injected into Leaflet
       const style = document.createElement('style')
       style.textContent = `
+        /* === Deep Ocean Background === */
         .leaflet-container {
-          background: linear-gradient(180deg, #0ea5e9 0%, #06b6d4 100%) !important;
+          background: linear-gradient(
+            175deg,
+            #0c1e3a 0%,
+            #0f3460 25%,
+            #1a5276 50%,
+            #1a7a8a 75%,
+            #148fa8 100%
+          ) !important;
+          font-family: Inter, sans-serif !important;
         }
+
+        /* === Island Glow (applied to entire SVG overlay layer) === */
+        .leaflet-overlay-pane svg {
+          filter: drop-shadow(0 0 18px rgba(64, 145, 108, 0.55))
+                  drop-shadow(0 0 6px rgba(45, 106, 79, 0.35));
+        }
+
+        /* === Custom Zoom Controls === */
+        .leaflet-bar {
+          border: none !important;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
+          border-radius: 14px !important;
+          overflow: hidden !important;
+          background: transparent !important;
+        }
+        .leaflet-bar a {
+          background: rgba(15, 52, 96, 0.85) !important;
+          backdrop-filter: blur(8px) !important;
+          -webkit-backdrop-filter: blur(8px) !important;
+          color: #7dd3fc !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+          width: 36px !important;
+          height: 36px !important;
+          line-height: 34px !important;
+          font-size: 20px !important;
+          font-weight: 300 !important;
+          transition: background 0.2s ease, color 0.2s ease !important;
+        }
+        .leaflet-bar a:hover,
+        .leaflet-bar a:focus {
+          background: rgba(20, 184, 166, 0.85) !important;
+          color: white !important;
+        }
+        .leaflet-bar a:first-child {
+          border-radius: 14px 14px 0 0 !important;
+        }
+        .leaflet-bar a:last-child {
+          border-radius: 0 0 14px 14px !important;
+          border-bottom: none !important;
+        }
+        .leaflet-top.leaflet-left {
+          top: auto !important;
+          bottom: 60px !important;
+          left: 16px !important;
+        }
+
+        /* === Area Label DivIcons — clear Leaflet defaults === */
+        .area-label,
+        .leaflet-div-icon.area-label {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+
+        /* === Island tooltip (keep for potential re-enable) === */
         .island-tooltip {
-          background: rgba(20, 184, 166, 0.95);
-          color: white;
-          border: 2px solid white;
+          background: rgba(15, 52, 96, 0.9);
+          color: #e0f7fa;
+          border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 8px;
-          padding: 4px 8px;
+          padding: 4px 10px;
           font-weight: 600;
           font-size: 11px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
       `
       document.head.appendChild(style)
@@ -82,16 +148,25 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
 
       // Siargao island municipalities
       const siargaoMunicipalities = [
-        'DAPA', 'DEL CARMEN', 'GENERAL LUNA', 
-        'PILAR', 'SAN BENITO', 'SAN ISIDRO', 
+        'DAPA', 'DEL CARMEN', 'GENERAL LUNA',
+        'PILAR', 'SAN BENITO', 'SAN ISIDRO',
         'SOCORRO', 'BURGOS', 'SANTA MONICA'
       ]
+
+      // Island style — tropical forest green
+      const siargaoStyle = (_feature: any) => ({
+        fillColor: '#2d6a4f',
+        weight: 1.5,
+        opacity: 0.9,
+        color: '#52b788',
+        dashArray: '4, 2',
+        fillOpacity: 0.72,
+      })
 
       // Load GeoJSON and filter for Siargao only
       fetch('/SURIGAO_DEL_NORTE.geojson')
         .then(response => response.json())
         .then(data => {
-          // Filter features to only include Siargao municipalities
           const siargaoFeatures = {
             type: 'FeatureCollection' as const,
             features: data.features.filter((feature: any) =>
@@ -99,28 +174,26 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
             )
           }
 
-          // Style for Siargao municipalities
-          const siargaoStyle = (feature: any) => {
-            return {
-              fillColor: 'yellow',
-              weight: 2,
-              color: 'yellow',
-            }
-          }
-
-          // Add GeoJSON layer for Siargao
           // @ts-ignore - Leaflet GeoJSON accepts this format
           const geoJsonLayer = L.geoJSON(siargaoFeatures, {
             style: siargaoStyle,
             onEachFeature: (feature: any, layer: any) => {
-              const municipalityName = feature.properties.MUNICIPALI
+              // Override tooltip labels for known offshore islands
+              const islandNames: { [objectId: number]: string } = {
+                1733: 'DAKU',
+                1734: 'DAKU',
+              }
+              const objectId = feature.properties.OBJECTID
+              const tooltipLabel = islandNames[objectId] ?? feature.properties.MUNICIPALI
 
-              // Hover effects
               layer.on({
                 mouseover: () => {
                   layer.setStyle({
-                    fillOpacity: 0.4,
-                    weight: 3,
+                    fillColor: '#52b788',
+                    fillOpacity: 0.85,
+                    weight: 2.5,
+                    color: '#74c69d',
+                    dashArray: '',
                   })
                 },
                 mouseout: () => {
@@ -128,8 +201,7 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
                 },
               })
 
-              // Tooltip with municipality name
-              layer.bindTooltip(municipalityName, {
+              layer.bindTooltip(tooltipLabel, {
                 permanent: false,
                 direction: 'center',
                 className: 'island-tooltip'
@@ -139,16 +211,79 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
 
           geoJsonLayerRef.current = geoJsonLayer
 
-          // Fit map to Siargao bounds
-          const bounds = geoJsonLayer.getBounds()
-          map.fitBounds(bounds, { padding: [50, 50] })
+          // Bounds calculated but map stays fixed at the configured center
+          geoJsonLayer.getBounds()
+
+          // ---- Static Location Labels ----
+          const createAreaLabel = (
+            coords: [number, number],
+            name: string,
+            subtitle: string,
+            style: 'town' | 'surf'
+          ) => {
+            const isTown = style === 'town'
+            const html = isTown
+              ? `<div style="
+                    font-family: Inter, sans-serif;
+                    background: rgba(12, 30, 58, 0.82);
+                    backdrop-filter: blur(6px);
+                    -webkit-backdrop-filter: blur(6px);
+                    color: #e0f7fa;
+                    padding: 5px 10px 5px 8px;
+                    border-radius: 20px;
+                    border: 1px solid rgba(255,255,255,0.22);
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    white-space: nowrap;
+                    box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    text-transform: uppercase;
+                    pointer-events: none;
+                  ">
+                    <span style="font-size:10px;">📍</span>
+                    ${name}
+                    ${subtitle ? `<span style="font-weight:400; opacity:0.7; font-size:9px; text-transform:none; margin-left:2px;">${subtitle}</span>` : ''}
+                  </div>`
+              : `<div style="
+                    font-family: Inter, sans-serif;
+                    background: linear-gradient(135deg, rgba(234,88,12,0.88), rgba(219,39,119,0.88));
+                    backdrop-filter: blur(6px);
+                    -webkit-backdrop-filter: blur(6px);
+                    color: white;
+                    padding: 4px 10px;
+                    border-radius: 20px;
+                    border: 1px solid rgba(255,255,255,0.3);
+                    font-size: 11px;
+                    font-weight: 800;
+                    white-space: nowrap;
+                    box-shadow: 0 2px 12px rgba(234,88,12,0.4);
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    pointer-events: none;
+                  ">
+                    🏄‍♂️ ${name}
+                  </div>`
+
+            return L.marker(coords, {
+              icon: L.divIcon({
+                className: 'area-label',
+                html,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
+              }),
+              interactive: false,
+              zIndexOffset: -100,
+            })
+          }
         })
         .catch(error => {
           console.error('Error loading GeoJSON:', error)
           console.log('Make sure SURIGAO_DEL_NORTE.geojson is in your public folder!')
         })
-
-
     }
 
     // Clear and add property markers
@@ -172,7 +307,7 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
   const createPropertyMarker = (property: Property) => {
     const price = property.pricing?.[0]?.base_price || 0
     const markerColor = getMarkerColor(property.property_type)
-    
+
     const customIcon = L.divIcon({
       className: 'property-marker',
       html: `
@@ -255,8 +390,71 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
 
   return (
     <div className="relative">
-      <div id="map" className="w-full h-[600px] rounded-2xl border-4 border-teal-200 shadow-2xl" />
+      {/* Gradient border wrapper — 3px padding reveals gradient as border */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #0ea5e9, #14b8a6, #10b981, #f59e0b)',
+          borderRadius: '20px',
+          padding: '3px',
+          boxShadow: '0 20px 60px rgba(14, 165, 233, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25)',
+        }}
+      >
+        <div
+          id="map"
+          className="w-full"
+          style={{
+            height: '620px',
+            borderRadius: '17px',
+            overflow: 'hidden',
+          }}
+        />
+      </div>
 
+      {/* Vignette overlay for ocean depth — sits above map, below controls */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: '3px',
+          borderRadius: '17px',
+          background: 'radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.32) 100%)',
+          pointerEvents: 'none',
+          zIndex: 500,
+        }}
+      />
+
+      {/* Floating title bar — centered top */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          background: 'rgba(12, 30, 58, 0.78)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          borderRadius: '30px',
+          padding: '8px 22px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+        }}
+      >
+        <span style={{ fontSize: '15px' }}>🏝️</span>
+        <span style={{ color: '#e0f7fa', fontSize: '13px', fontWeight: 700, letterSpacing: '0.4px' }}>
+          Siargao Island
+        </span>
+        <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#14b8a6', display: 'inline-block' }} />
+        <span style={{ color: '#94d2bd', fontSize: '11px', fontWeight: 500 }}>
+          Philippines
+        </span>
+      </div>
+
+      {/* Property detail popup */}
       {selectedProperty && (
         <div className="absolute bottom-4 left-4 right-4 md:left-auto md:w-96 bg-white rounded-2xl shadow-2xl z-[1000] overflow-hidden border-4 border-teal-300">
           <button onClick={() => setSelectedProperty(null)} className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 z-10 transition-transform hover:scale-110">
@@ -294,26 +492,69 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
         </div>
       )}
 
-      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 z-[1000] border-2 border-teal-200">
-        <h4 className="text-sm font-bold mb-3 text-gray-900">🏝️ Property Types</h4>
-        <div className="space-y-2 text-xs">
+      {/* Dark glassmorphism legend — top right */}
+      <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000 }}>
+        <div
+          style={{
+            background: 'rgba(12, 30, 58, 0.82)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '16px',
+            padding: '14px 16px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)',
+            minWidth: '148px',
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+            <span style={{ fontSize: '13px' }}>🏝️</span>
+            <span style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '1.2px',
+              textTransform: 'uppercase' as const,
+              color: '#94d2bd',
+            }}>
+              Stay Types
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div style={{
+            height: '1px',
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.15), transparent)',
+            marginBottom: '10px',
+          }} />
+
+          {/* Items */}
           {[
-            { name: 'Villa', color: 'from-green-400 to-green-600' },
-            { name: 'Homestay', color: 'from-blue-400 to-blue-600' },
-            { name: 'Hotel', color: 'from-amber-400 to-orange-600' },
-            { name: 'Hostel', color: 'from-purple-400 to-purple-600' },
-            { name: 'Apartment', color: 'from-pink-400 to-pink-600' }
-          ].map(type => (
-            <div key={type.name} className="flex items-center">
-              <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${type.color} mr-2 border-2 border-white shadow-md`}></div>
-              <span className="font-medium">{type.name}</span>
+            { name: 'Villa',      color: '#10b981', glow: 'rgba(16,185,129,0.45)' },
+            { name: 'Homestay',   color: '#3b82f6', glow: 'rgba(59,130,246,0.45)' },
+            { name: 'Hotel',      color: '#f59e0b', glow: 'rgba(245,158,11,0.45)' },
+            { name: 'Hostel',     color: '#8b5cf6', glow: 'rgba(139,92,246,0.45)' },
+            { name: 'Apartment',  color: '#ec4899', glow: 'rgba(236,72,153,0.45)' },
+          ].map((type, i) => (
+            <div key={type.name} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: i < 4 ? '8px' : '0',
+            }}>
+              <div style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                background: type.color,
+                boxShadow: `0 0 8px ${type.glow}`,
+                flexShrink: 0,
+              }} />
+              <span style={{ fontSize: '12px', color: '#e0f7fa', fontWeight: 500 }}>
+                {type.name}
+              </span>
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="absolute bottom-4 right-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-5 py-2 rounded-full text-xs font-bold shadow-2xl z-[999] border-2 border-white">
-        🏄‍♂️ Siargao Island
       </div>
     </div>
   )
