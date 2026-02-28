@@ -5,35 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { X, Star, Users, Home } from 'lucide-react'
-
-// Fix Leaflet default marker icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-})
-
-interface Property {
-  id: string
-  property_name: string
-  property_type: string
-  barangay: string
-  latitude: number
-  longitude: number
-  max_guests: number
-  bedrooms: number
-  pricing: {
-    base_price: number
-  }[]
-  photos: {
-    photo_url: string
-    is_cover: boolean
-  }[]
-  reviews?: {
-    overall_rating: number
-  }[]
-}
+import type { Property } from '@/lib/types'
 
 interface SiargaoMapProps {
   properties: Property[]
@@ -125,6 +97,14 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
         /* === Area Label DivIcons — clear Leaflet defaults === */
         .area-label,
         .leaflet-div-icon.area-label {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+
+        /* === Property Marker DivIcons — clear Leaflet defaults === */
+        .property-marker,
+        .leaflet-div-icon.property-marker {
           background: transparent !important;
           border: none !important;
           box-shadow: none !important;
@@ -286,17 +266,17 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
         })
     }
 
-    // Clear and add property markers
-    // markersRef.current.forEach(marker => marker.remove())
-    // markersRef.current = []
+    // Clear old markers before adding new ones
+    markersRef.current.forEach(marker => marker.remove())
+    markersRef.current = []
 
-    // properties.forEach(property => {
-    //   if (property.latitude && property.longitude) {
-    //     const marker = createPropertyMarker(property)
-    //     marker.addTo(mapRef.current!)
-    //     markersRef.current.push(marker)
-    //   }
-    // })
+    properties.forEach(property => {
+      if (property.latitude && property.longitude) {
+        const marker = createPropertyMarker(property)
+        marker.addTo(mapRef.current!)
+        markersRef.current.push(marker)
+      }
+    })
 
     return () => {
       markersRef.current.forEach(marker => marker.remove())
@@ -485,9 +465,9 @@ export default function SiargaoMap({ properties }: SiargaoMapProps) {
                 <span className="ml-1 text-sm text-gray-500">({selectedProperty.reviews.length} reviews)</span>
               </div>
             )}
-            <button className="w-full py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all font-bold shadow-lg transform hover:scale-105">
-              Book Now 🏄‍♂️
-            </button>
+            <a href={`/properties/${selectedProperty.id}`} className="block w-full py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all font-bold shadow-lg transform hover:scale-105 text-center">
+              View Details 🏄‍♂️
+            </a>
           </div>
         </div>
       )}

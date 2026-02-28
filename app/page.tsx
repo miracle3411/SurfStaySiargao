@@ -3,8 +3,10 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { Search, MapPin, Home, Users, Star, Waves } from 'lucide-react'
+import Link from 'next/link'
+import { MapPin, Home, Users, Star, Waves, SlidersHorizontal, ArrowUpDown, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import type { Property } from '@/lib/types'
 
 // Import Map component dynamically
 const SiargaoMap = dynamic(() => import('@/components/SiargaoMap'), {
@@ -24,35 +26,13 @@ const SiargaoMap = dynamic(() => import('@/components/SiargaoMap'), {
   )
 })
 
-interface Property {
-  id: string
-  property_name: string
-  property_type: string
-  barangay: string
-  latitude: number
-  longitude: number
-  max_guests: number
-  bedrooms: number
-  pricing: {
-    base_price: number
-  }[]
-  photos: {
-    photo_url: string
-    is_cover: boolean
-  }[]
-  _count?: {
-    reviews: number
-  }
-  reviews?: {
-    overall_rating: number
-  }[]
-}
-
 export default function HomePage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'newest' | 'price_low' | 'price_high' | 'rating'>('newest')
+  const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({
     priceMin: 0,
     priceMax: 20000,
@@ -103,7 +83,30 @@ export default function HomePage() {
     const matchesGuests = property.max_guests >= filters.guests
 
     return matchesSearch && matchesPrice && matchesType && matchesGuests
+  }).sort((a, b) => {
+    const priceA = a.pricing?.[0]?.base_price || 0
+    const priceB = b.pricing?.[0]?.base_price || 0
+    const ratingA = a.reviews && a.reviews.length > 0
+      ? a.reviews.reduce((sum, r) => sum + r.overall_rating, 0) / a.reviews.length : 0
+    const ratingB = b.reviews && b.reviews.length > 0
+      ? b.reviews.reduce((sum, r) => sum + r.overall_rating, 0) / b.reviews.length : 0
+
+    switch (sortBy) {
+      case 'price_low': return priceA - priceB
+      case 'price_high': return priceB - priceA
+      case 'rating': return ratingB - ratingA
+      default: return 0
+    }
   })
+
+  const hasActiveFilters = filters.priceMin > 0 || filters.priceMax < 20000 ||
+    filters.propertyType !== 'all' || filters.guests > 1 || searchQuery !== ''
+
+  const clearFilters = () => {
+    setFilters({ priceMin: 0, priceMax: 20000, propertyType: 'all', guests: 1 })
+    setSearchQuery('')
+    setSortBy('newest')
+  }
 
   const getCoverPhoto = (property: Property) => {
     const cover = property.photos?.find(p => p.is_cover)
@@ -159,6 +162,7 @@ export default function HomePage() {
 
             {/* Search Bar - Tropical White Card */}
             <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border-4 border-white">
+              {/* Row 1: Search + Guests + Type */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -186,7 +190,7 @@ export default function HomePage() {
                       type="number"
                       min="1"
                       value={filters.guests}
-                      onChange={(e) => setFilters({...filters, guests: parseInt(e.target.value)})}
+                      onChange={(e) => setFilters({...filters, guests: parseInt(e.target.value) || 1})}
                       className="w-full pl-10 pr-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 hover:border-orange-300 transition-colors"
                     />
                   </div>
@@ -210,6 +214,132 @@ export default function HomePage() {
                   </select>
                 </div>
               </div>
+
+              {/* Row 2: More Filters Toggle */}
+              <div className="mt-4 flex items-center justify-between">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-teal-600 transition-colors"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  {showFilters ? 'Hide Filters' : 'More Filters'}
+                </button>
+
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* Expandable Filters */}
+              {showFilters && (
+                <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Price Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      💰 Price Range (per night)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-2.5 text-sm text-gray-400">₱</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={filters.priceMin}
+                          onChange={(e) => setFilters({...filters, priceMin: parseInt(e.target.value) || 0})}
+                          placeholder="Min"
+                          className="w-full pl-7 pr-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
+                        />
+                      </div>
+                      <span className="text-gray-400 font-medium">—</span>
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-2.5 text-sm text-gray-400">₱</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={filters.priceMax}
+                          onChange={(e) => setFilters({...filters, priceMax: parseInt(e.target.value) || 20000})}
+                          placeholder="Max"
+                          className="w-full pl-7 pr-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
+                        />
+                      </div>
+                    </div>
+                    {/* Quick price buttons */}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {[
+                        { label: 'Budget', min: 0, max: 1000 },
+                        { label: 'Mid', min: 1000, max: 3000 },
+                        { label: 'Premium', min: 3000, max: 20000 },
+                      ].map((range) => (
+                        <button
+                          key={range.label}
+                          onClick={() => setFilters({...filters, priceMin: range.min, priceMax: range.max})}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            filters.priceMin === range.min && filters.priceMax === range.max
+                              ? 'bg-teal-50 border-teal-300 text-teal-700'
+                              : 'border-gray-200 text-gray-500 hover:border-teal-300 hover:text-teal-600'
+                          }`}
+                        >
+                          {range.label} (₱{range.min.toLocaleString()}–{range.max === 20000 ? '20k+' : `₱${range.max.toLocaleString()}`})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sort By */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <ArrowUpDown className="h-4 w-4 inline mr-1" />
+                      Sort By
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="price_low">Price: Low to High</option>
+                      <option value="price_high">Price: High to Low</option>
+                      <option value="rating">Highest Rated</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Active Filter Badges */}
+              {hasActiveFilters && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {searchQuery && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-xs font-medium border border-teal-200">
+                      Search: "{searchQuery}"
+                      <button onClick={() => setSearchQuery('')} className="hover:text-teal-900"><X className="h-3 w-3" /></button>
+                    </span>
+                  )}
+                  {filters.propertyType !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-cyan-50 text-cyan-700 rounded-full text-xs font-medium border border-cyan-200">
+                      {filters.propertyType}
+                      <button onClick={() => setFilters({...filters, propertyType: 'all'})} className="hover:text-cyan-900"><X className="h-3 w-3" /></button>
+                    </span>
+                  )}
+                  {filters.guests > 1 && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
+                      {filters.guests}+ guests
+                      <button onClick={() => setFilters({...filters, guests: 1})} className="hover:text-orange-900"><X className="h-3 w-3" /></button>
+                    </span>
+                  )}
+                  {(filters.priceMin > 0 || filters.priceMax < 20000) && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-200">
+                      ₱{filters.priceMin.toLocaleString()} – ₱{filters.priceMax.toLocaleString()}
+                      <button onClick={() => setFilters({...filters, priceMin: 0, priceMax: 20000})} className="hover:text-green-900"><X className="h-3 w-3" /></button>
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* View Toggle - Tropical Buttons */}
               <div className="mt-6 flex justify-center gap-4">
@@ -311,8 +441,9 @@ export default function HomePage() {
               // Grid View - Tropical Cards
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProperties.map((property) => (
-                  <div 
-                    key={property.id} 
+                  <Link
+                    href={`/properties/${property.id}`}
+                    key={property.id}
                     className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-teal-300"
                   >
                     <div className="relative h-56 overflow-hidden">
@@ -353,12 +484,12 @@ export default function HomePage() {
                             </span>
                           )}
                         </div>
-                        <button className="px-5 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105">
+                        <span className="px-5 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105">
                           Book Now 🏄‍♂️
-                        </button>
+                        </span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
