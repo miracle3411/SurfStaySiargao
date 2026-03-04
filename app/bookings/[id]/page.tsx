@@ -30,8 +30,10 @@ export default function BookingConfirmationPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const paymentStatus = searchParams.get('status')
+  const emailParam = searchParams.get('email')
   const [booking, setBooking] = useState<BookingDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [accessDenied, setAccessDenied] = useState(false)
 
   useEffect(() => {
     if (params.id) {
@@ -62,9 +64,18 @@ export default function BookingConfirmationPage() {
         .single()
 
       if (error) throw error
-      setBooking(data as unknown as BookingDetail)
-    } catch (error) {
-      console.error('Error fetching booking:', error)
+
+      // Verify email matches to prevent unauthorized access
+      const bookingData = data as unknown as BookingDetail
+      if (!emailParam || bookingData.guest_email?.toLowerCase() !== emailParam.trim().toLowerCase()) {
+        setAccessDenied(true)
+        setLoading(false)
+        return
+      }
+
+      setBooking(bookingData)
+    } catch {
+      // Don't log error details
     } finally {
       setLoading(false)
     }
@@ -90,7 +101,7 @@ export default function BookingConfirmationPage() {
     )
   }
 
-  if (!booking) {
+  if (accessDenied || !booking) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-cyan-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center">
@@ -219,7 +230,7 @@ export default function BookingConfirmationPage() {
                 const res = await fetch('/api/payments', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ booking_id: booking.id }),
+                  body: JSON.stringify({ booking_id: booking.id, guest_email: booking.guest_email }),
                 })
                 const data = await res.json()
                 if (data.invoice_url) {

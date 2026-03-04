@@ -9,6 +9,14 @@ const supabase = createClient(
 // Xendit sends webhook notifications when invoice status changes
 export async function POST(request: NextRequest) {
   try {
+    // Verify webhook callback token (set in Xendit Dashboard > Settings > Callbacks)
+    const callbackToken = request.headers.get('x-callback-token')
+    const expectedToken = process.env.XENDIT_WEBHOOK_VERIFICATION_TOKEN
+
+    if (!expectedToken || callbackToken !== expectedToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { external_id, status, id: invoiceId } = body
 
@@ -18,6 +26,17 @@ export async function POST(request: NextRequest) {
     }
 
     const bookingId = external_id.replace('booking-', '')
+
+    // Verify booking exists before updating
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('id, status')
+      .eq('id', bookingId)
+      .single()
+
+    if (!booking) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    }
 
     if (status === 'PAID' || status === 'SETTLED') {
       // Payment successful — confirm booking
@@ -42,8 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true })
-  } catch (error) {
-    console.error('Xendit webhook error:', error)
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

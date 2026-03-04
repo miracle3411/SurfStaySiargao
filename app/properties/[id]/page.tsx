@@ -122,7 +122,6 @@ export default function PropertyDetailPage() {
           check_in: checkIn,
           check_out: checkOut,
           guests,
-          total_price: totalPrice,
           guest_name: guestName,
           guest_email: guestEmail,
         }),
@@ -138,7 +137,7 @@ export default function PropertyDetailPage() {
       const paymentRes = await fetch('/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ booking_id: bookingData.booking.id }),
+        body: JSON.stringify({ booking_id: bookingData.booking.id, guest_email: guestEmail }),
       })
 
       const paymentData = await paymentRes.json()

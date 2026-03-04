@@ -3,10 +3,20 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, User, LogIn, UserPlus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Menu, X, LogIn, LogOut, UserPlus } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/components/AuthProvider'
 
 export default function Header() {
+  const router = useRouter()
+  const { user } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -36,20 +46,35 @@ export default function Header() {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link
-              href="/login"
-              className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Sign Up
-            </Link>
+            {user ? (
+              <>
+                <span className="text-sm text-gray-600">{user.email}</span>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center text-gray-700 hover:text-red-600 transition-colors"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -98,20 +123,34 @@ export default function Header() {
                 About
               </Link>
               <div className="border-t pt-4 px-4 space-y-2">
-                <Link
-                  href="/login"
-                  className="block text-center text-gray-700 hover:text-blue-600 transition-colors py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  className="block text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign Up
-                </Link>
+                {user ? (
+                  <>
+                    <p className="text-sm text-gray-500 text-center">{user.email}</p>
+                    <button
+                      onClick={() => { handleLogout(); setMobileMenuOpen(false) }}
+                      className="block w-full text-center text-red-600 hover:text-red-700 transition-colors py-2 font-medium"
+                    >
+                      Log Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="block text-center text-gray-700 hover:text-blue-600 transition-colors py-2"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="block text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

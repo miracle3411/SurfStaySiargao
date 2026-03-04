@@ -9,10 +9,13 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { booking_id } = body
+    const { booking_id, guest_email } = body
 
     if (!booking_id) {
       return NextResponse.json({ error: 'Missing booking_id' }, { status: 400 })
+    }
+    if (!guest_email) {
+      return NextResponse.json({ error: 'Missing guest_email' }, { status: 400 })
     }
 
     // Get booking details
@@ -27,6 +30,11 @@ export async function POST(request: NextRequest) {
 
     if (bookingError || !booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    }
+
+    // Verify the requester owns this booking
+    if (booking.guest_email?.toLowerCase() !== guest_email.trim().toLowerCase()) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     if (booking.status !== 'pending') {
@@ -51,16 +59,14 @@ export async function POST(request: NextRequest) {
           given_names: booking.guest_name || 'Guest',
           email: booking.guest_email || undefined,
         },
-        success_redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings/${booking.id}?status=success`,
-        failure_redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings/${booking.id}?status=failed`,
+        success_redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings/${booking.id}?status=success&email=${encodeURIComponent(booking.guest_email)}`,
+        failure_redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings/${booking.id}?status=failed&email=${encodeURIComponent(booking.guest_email)}`,
         invoice_duration: 3600, // 1 hour expiry
         payment_methods: ['GCASH', 'GRABPAY', 'PAYMAYA', 'CARD', 'BANK_TRANSFER'],
       }),
     })
 
     if (!xenditResponse.ok) {
-      const errorData = await xenditResponse.json()
-      console.error('Xendit error:', errorData)
       return NextResponse.json({ error: 'Failed to create payment' }, { status: 500 })
     }
 
@@ -76,8 +82,7 @@ export async function POST(request: NextRequest) {
       invoice_url: invoice.invoice_url,
       invoice_id: invoice.id,
     })
-  } catch (error) {
-    console.error('Payment API error:', error)
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
